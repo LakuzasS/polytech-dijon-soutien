@@ -1,3 +1,5 @@
+from django.db import models
+
 class Statement(models.Model):
     date = models.DateTimeField("Date du statement")
     text = models.TextField(blank=True, null=True)
