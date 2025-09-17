@@ -1,6 +1,7 @@
 import random
 import os
 import json
+import itertools
 class Stats:
     def __init__(self, path=None):
         if path is None:
@@ -115,6 +116,40 @@ class Mastermind:
     def affres(self, bon, mauvais):
         print(f"Correct : {bon} | Partiel : {mauvais}  (trop fort ou pas ?)")
 
+
+def calcrep(secret, essai):
+    bon = 0
+    mal = 0
+    code = secret.copy()
+    tst = essai.copy()
+    for i in range(len(secret)):
+        if tst[i] == code[i]:
+            bon += 1
+            code[i] = None
+            tst[i] = "_"
+    for i in range(len(secret)):
+        if tst[i] in code and tst[i] != "_":
+            mal += 1
+            code[code.index(tst[i])] = None
+    return bon, mal
+
+
+class Ordi:
+    def deviner(self, couleurs, taille, maxessais, secret):
+        poss = [list(p) for p in itertools.product(couleurs, repeat=taille)]
+        essais = 0
+        while essais < maxessais and poss:
+            ess = list(random.choice(poss))
+            essais += 1
+            print(f"Ordi essai {essais} : {''.join(ess)}")
+            bon, mal = calcrep(secret, ess)
+            if bon == taille:
+                print(f"GG l'ordi a trouve en {essais} essais")
+                return essais
+            poss = [p for p in poss if calcrep(p, ess) == (bon, mal)]
+        print("L'ordi n'a pas reussi a trouver le code")
+        return None
+
 class Joueur:
     def __init__(self, nom):
         self.nom = nom
@@ -164,6 +199,7 @@ def affichermenu():
     print("2) Remettre a zero les stats")
     print("3) Quitter")
     print("4) Configurer les options du jeu")
+    print("5) Mode inverse (l'ordi devine)")
 
 
 def lancerjeu():
@@ -176,6 +212,24 @@ def lancerjeu():
     j = Joueur(nom)
     p = Partie(j, m)
     p.lancer()
+
+
+def modeinverse():
+    print("Mode inverse : tu choisis un code, l'ordi essaye de deviner")
+    couleurs = DEFAULTS['couleurs']
+    taille = DEFAULTS['taille']
+    maxessais = DEFAULTS['maxessais']
+    code = input(f"Donne ton code secret de {taille} lettres: ").strip().upper()
+    while len(code) != taille or any(c not in couleurs for c in code):
+        print("Code invalide, recommence")
+        code = input(f"Donne ton code secret de {taille} lettres: ").strip().upper()
+    secret = list(code)
+    o = Ordi()
+    essais = o.deviner(couleurs, taille, maxessais, secret)
+    if essais:
+        STATS.ajout(max(0, maxessais - essais), 'ordi')
+    else:
+        STATS.ajout(0, 'ordi')
 
 
 def remettrezero():
