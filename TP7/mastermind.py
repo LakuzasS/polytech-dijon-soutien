@@ -111,3 +111,46 @@ class Partie:
         score = 0
         nstats = STATS.ajouter(score)
         print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
+
+
+def affichermenu():
+    print("\n=== Mastermind ===")
+    print("1) Jouer")
+    print("2) Remettre a zero les stats")
+    print("3) Quitter")
+
+
+def lancerjeu():
+    print("Lancer une partie !")
+    couleurs = ['R','G','B','Y','P','N']
+    taille = 4
+    maxessais = 12
+    nom = input("Ton blaze ? ").strip() or "Toi"
+    m = Mastermind(couleurs, taille, maxessais)
+    j = Joueur(nom)
+    p = Partie(j, m)
+    p.lancer()
+
+
+def remettrezero():
+    STATS.reset()
+    print("Ok, stats remises a zero. On repart a 0 !")
+
+
+def main():
+    while True:
+        affichermenu()
+        choix = input("Ton choix > ").strip()
+        if choix == '1':
+            lancerjeu()
+        elif choix == '2':
+            remettrezero()
+        elif choix == '3' or choix.lower() == 'q':
+            print("A plus !")
+            break
+        else:
+            print("Choix invalide, reessaie stp")
+
+
+if __name__ == '__main__':
+    main()
