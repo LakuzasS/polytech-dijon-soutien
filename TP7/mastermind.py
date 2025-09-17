@@ -37,6 +37,12 @@ class Stats:
 
 STATS = Stats()
 
+DEFAULTS = {
+    'couleurs': ['R','G','B','Y','P','N'],
+    'taille': 4,
+    'maxessais': 12,
+}
+
 class Mastermind:
     def __init__(self, couleurs, taille, maxessais):
         self.couleurs = couleurs
@@ -118,13 +124,14 @@ def affichermenu():
     print("1) Jouer")
     print("2) Remettre a zero les stats")
     print("3) Quitter")
+    print("4) Configurer les options du jeu")
 
 
 def lancerjeu():
     print("Lancer une partie !")
-    couleurs = ['R','G','B','Y','P','N']
-    taille = 4
-    maxessais = 12
+    couleurs = DEFAULTS['couleurs']
+    taille = DEFAULTS['taille']
+    maxessais = DEFAULTS['maxessais']
     nom = input("Ton blaze ? ").strip() or "Toi"
     m = Mastermind(couleurs, taille, maxessais)
     j = Joueur(nom)
@@ -137,12 +144,37 @@ def remettrezero():
     print("Ok, stats remises a zero. On repart a 0 !")
 
 
+def configurer():
+    print("Configurer les options du jeu :")
+    cur = DEFAULTS.copy()
+    print(f"Couleurs actuelles: {' '.join(cur['couleurs'])}")
+    nc = input("Nouvelle liste de lettres pour couleurs (ex: RGBYPN) ou entree pour garder: ").upper().strip()
+    if nc:
+        cur['couleurs'] = list(nc)
+    nt = input(f"Taille du code actuelle ({cur['taille']}) ou entree pour garder: ").strip()
+    if nt:
+        try:
+            cur['taille'] = int(nt)
+        except ValueError:
+            print("Taille invalide, on garde la valeur precedente.")
+    ne = input(f"Max essais actuelle ({cur['maxessais']}) ou entree pour garder: ").strip()
+    if ne:
+        try:
+            cur['maxessais'] = int(ne)
+        except ValueError:
+            print("Max essais invalide, on garde la valeur precedente.")
+    DEFAULTS.update(cur)
+    print("Nouvelles options en place.")
+
+
 def main():
     while True:
         affichermenu()
         choix = input("Ton choix > ").strip()
         if choix == '1':
             lancerjeu()
+        elif choix == '4':
+            configurer()
         elif choix == '2':
             remettrezero()
         elif choix == '3' or choix.lower() == 'q':
