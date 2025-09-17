@@ -33,21 +33,32 @@ class Mastermind:
     def affres(self, bon, mauvais):
         print(f"Correct : {bon} | Partiel : {mauvais}  (trop fort ou pas ?)")
 
-    def jouer(self):
-        print("Yo bienvenue sur le Mastermind :) Voici les couleurs dispo :")
-        print(" ".join(self.couleurs))
-        print(f"Faut trouver le code de {self.taille} couleurs, t'as {self.maxessais} essais. Vas-y, tente ta chance !")
-        while len(self.essais) < self.maxessais:
-            essai = input(f"Essai {len(self.essais)+1} : ").upper()
-            if len(essai) != self.taille or any(c not in self.couleurs for c in essai):
-                print("Rhoo, mets un code valide avec les bonnes couleurs !")
-                continue
-            essailist = list(essai)
-            self.ajoutessai(essailist)
-            bon, mauvais = self.verifessai(essailist)
-            self.affres(bon, mauvais)
-            if bon == self.taille:
-                print(f"GG, t'as cracké le code en {len(self.essais)} essais !")
-                return
-        print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.codesecret)}")
+class Joueur:
+    def __init__(self, nom):
+        self.nom = nom
 
+    def proposercode(self, taille, couleurs):
+        code = input(f"{self.nom}, balance ton code de {taille} couleurs : ").upper()
+        while len(code) != taille or any(c not in couleurs for c in code):
+            print("Nope, c'est pas bon, recommence !")
+            code = input(f"{self.nom}, balance ton code de {taille} couleurs : ").upper()
+        return list(code)
+
+class Partie:
+    def __init__(self, joueur, mastermind):
+        self.joueur = joueur
+        self.mastermind = mastermind
+
+    def lancer(self):
+        print("Let's go ! On démarre la partie !")
+        print("Couleurs dispo : " + " ".join(self.mastermind.couleurs))
+        print(f"Trouve le code de {self.mastermind.taille} couleurs, t'as {self.mastermind.maxessais} essais.")
+        while len(self.mastermind.essais) < self.mastermind.maxessais:
+            essai = self.joueur.proposercode(self.mastermind.taille, self.mastermind.couleurs)
+            self.mastermind.ajoutessai(essai)
+            bon, mauvais = self.mastermind.verifessai(essai)
+            self.mastermind.affres(bon, mauvais)
+            if bon == self.mastermind.taille:
+                print(f"GG {self.joueur.nom}, t'as cracké le code en {len(self.mastermind.essais)} essais !")
+                return
+        print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.mastermind.codesecret)}")
