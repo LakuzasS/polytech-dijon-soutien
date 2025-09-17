@@ -1,74 +1,53 @@
 import random
 import os
-import json
 import itertools
 class Stats:
     def __init__(self, path=None):
-        if path is None:
-            self.dossier = os.path.dirname(__file__)
-        elif os.path.isdir(path):
-            self.dossier = path
-        else:
-            self.dossier = os.path.dirname(path) or '.'
-        self.fnb = f"{self.dossier}/.mm_nb_parties"
-        self.fsc = f"{self.dossier}/.mm_score_total"
+        self.dossier = os.path.dirname(__file__)
+        self.fnb = os.path.join(self.dossier, '.mm_nb_parties')
+        self.fsc = os.path.join(self.dossier, '.mm_score_total')
 
-    def nettoiepseudo(self, pseudo):
-        if not pseudo:
-            return None
-        s = ''.join(c for c in pseudo if c.isalnum() or c == '_')
-        return s or None
-
-    def chemins(self, pseudo):
-        sp = self.nettoiepseudo(pseudo)
-        if not sp:
-            return self.fnb, self.fsc
-        return f"{self.dossier}/.mm_{sp}_nb_parties", f"{self.dossier}/.mm_{sp}_score_total"
-
-    def lire(self, pseudo=None):
+    def lire(self):
         nb = 0
         sc = 0
-        fnb, fsc = self.chemins(pseudo)
         try:
-            if os.path.exists(fnb):
-                with open(fnb, 'r') as f:
+            if os.path.exists(self.fnb):
+                with open(self.fnb, 'r') as f:
                     nb = int(f.read().strip() or 0)
         except Exception:
             nb = 0
         try:
-            if os.path.exists(fsc):
-                with open(fsc, 'r') as f:
+            if os.path.exists(self.fsc):
+                with open(self.fsc, 'r') as f:
                     sc = int(f.read().strip() or 0)
         except Exception:
             sc = 0
         return {'nb_parties': nb, 'score_total': sc}
 
-    def ajout(self, score, pseudo=None):
-        s = self.lire(pseudo)
+    def ajout(self, score):
+        s = self.lire()
         nb = s.get('nb_parties', 0) + 1
         sc = s.get('score_total', 0) + int(score)
-        fnb, fsc = self.chemins(pseudo)
         try:
-            with open(fnb, 'w') as f:
+            with open(self.fnb, 'w') as f:
                 f.write(str(nb))
         except Exception:
             pass
         try:
-            with open(fsc, 'w') as f:
+            with open(self.fsc, 'w') as f:
                 f.write(str(sc))
         except Exception:
             pass
         return {'nb_parties': nb, 'score_total': sc}
 
-    def remet(self, pseudo=None):
-        fnb, fsc = self.chemins(pseudo)
+    def remet(self):
         try:
-            with open(fnb, 'w') as f:
+            with open(self.fnb, 'w') as f:
                 f.write('0')
         except Exception:
             pass
         try:
-            with open(fsc, 'w') as f:
+            with open(self.fsc, 'w') as f:
                 f.write('0')
         except Exception:
             pass
@@ -82,6 +61,44 @@ DEFAULTS = {
     'taille': 4,
     'maxessais': 12,
 }
+
+
+def normaliser_couleurs(entree):
+    if isinstance(entree, list):
+        seq = ''.join(entree)
+    else:
+        seq = str(entree)
+    seq = seq.upper().strip()
+    res = []
+    for c in seq:
+        if c.isalpha() and c not in res:
+            res.append(c)
+    return res
+
+
+def valider_opts(opts):
+    cols = normaliser_couleurs(opts.get('couleurs', []))
+    if not cols:
+        return False, 'Liste de couleurs invalide'
+    taille = opts.get('taille', 4)
+    try:
+        taille = int(taille)
+    except Exception:
+        return False, 'Taille invalide'
+    if taille < 1:
+        return False, 'Taille doit etre >=1'
+    if taille > len(cols):
+        # duplicates are allowed in the secret code, so taille may be larger
+        # than the number of distinct colors; do not reject in that case.
+        pass
+    maxe = opts.get('maxessais', 12)
+    try:
+        maxe = int(maxe)
+    except Exception:
+        return False, 'Max essais invalide'
+    if maxe < 1:
+        return False, 'Max essais doit etre >=1'
+    return True, ''
 
 class Mastermind:
     def __init__(self, couleurs, taille, maxessais):
@@ -98,23 +115,10 @@ class Mastermind:
         self.essais.append(essai)
 
     def verifessai(self, essai):
-        bon = 0
-        mauvais = 0
-        code = self.codesecret.copy()
-        essai = essai.copy()
-        for i in range(self.taille):
-            if essai[i] == code[i]:
-                bon += 1
-                code[i] = None
-                essai[i] = "_"
-        for i in range(self.taille):
-            if essai[i] in code and essai[i] != "_":
-                mauvais += 1
-                code[code.index(essai[i])] = None
-        return bon, mauvais
+        return calcrep(self.codesecret, essai)
 
     def affres(self, bon, mauvais):
-        print(f"Correct : {bon} | Partiel : {mauvais}  (trop fort ou pas ?)")
+        print(f"Correct : {bon} | Partiel : {mauvais}")
 
 
 def calcrep(secret, essai):
@@ -133,7 +137,6 @@ def calcrep(secret, essai):
             code[code.index(tst[i])] = None
     return bon, mal
 
-
 class Ordi:
     def deviner(self, couleurs, taille, maxessais, secret):
         poss = [list(p) for p in itertools.product(couleurs, repeat=taille)]
@@ -151,14 +154,14 @@ class Ordi:
         return None
 
 class Joueur:
-    def __init__(self, nom):
+    def __init__(self, nom=None):
         self.nom = nom
 
     def proposercode(self, taille, couleurs):
-        code = input(f"{self.nom}, balance ton code de {taille} couleurs : ").upper()
+        code = input(f"Saisis le code de {taille} couleurs : ").upper()
         while len(code) != taille or any(c not in couleurs for c in code):
             print("Nope, c'est pas bon, recommence !")
-            code = input(f"{self.nom}, balance ton code de {taille} couleurs : ").upper()
+            code = input(f"Saisis le code de {taille} couleurs : ").upper()
         return list(code)
 
 class Partie:
@@ -170,7 +173,7 @@ class Partie:
         print("Let's go ! On démarre la partie !")
         print("Couleurs dispo : " + " ".join(self.mastermind.couleurs))
         print(f"Trouve le code de {self.mastermind.taille} couleurs, t'as {self.mastermind.maxessais} essais.")
-        stats = STATS.lire(self.joueur.nom)
+        stats = STATS.lire()
         nbp = stats.get('nb_parties', 0)
         tot = stats.get('score_total', 0)
         moy = (tot / nbp) if nbp else 0
@@ -183,23 +186,29 @@ class Partie:
             if bon == self.mastermind.taille:
                 essais = len(self.mastermind.essais)
                 score = max(0, self.mastermind.maxessais - essais)
-                print(f"GG {self.joueur.nom}, t'as cracké le code en {essais} essais ! Score: {score}")
-                nstats = STATS.ajout(score, self.joueur.nom)
-                print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
-                return
+                print(f"GG, t'as cracké le code en {essais} essais ! Score: {score}")
+                return score
         print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.mastermind.codesecret)}")
         score = 0
-        nstats = STATS.ajout(score, self.joueur.nom)
-        print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
+        return score
 
 
 def affichermenu():
     print("\n=== Mastermind ===")
-    print("1) Jouer")
+    print("1) Jouer (terminal)")
     print("2) Remettre a zero les stats")
     print("3) Quitter")
     print("4) Configurer les options du jeu")
     print("5) Mode inverse (l'ordi devine)")
+    print("6) Jouer (GUI)")
+
+
+def show_stats(_pseudo=None):
+    s = STATS.lire()
+    nbp = s.get('nb_parties', 0)
+    tot = s.get('score_total', 0)
+    moy = (tot / nbp) if nbp else 0
+    print(f"Stats (Global) -> parties: {nbp} | score total: {tot} | moyenne: {moy:.2f}")
 
 
 def lancerjeu():
@@ -207,18 +216,50 @@ def lancerjeu():
     couleurs = DEFAULTS['couleurs']
     taille = DEFAULTS['taille']
     maxessais = DEFAULTS['maxessais']
-    nom = input("Ton blaze ? ").strip() or "Toi"
-    m = Mastermind(couleurs, taille, maxessais)
-    j = Joueur(nom)
-    p = Partie(j, m)
-    p.lancer()
+    # no player name required; stats are global
+    # allow replaying the same player without returning to main menu
+    while True:
+        m = Mastermind(couleurs, taille, maxessais)
+        j = Joueur()
+        p = Partie(j, m)
+        score = p.lancer()
+        # save stats (global)
+        nstats = STATS.ajout(score)
+        print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
+        # after a finished game, present short menu
+        print("\n=== Fin de la partie ===")
+        show_stats()
+        print("1) Rejouer")
+        print("2) Remettre a zero les stats")
+        print("3) Retour au menu principal")
+        choix = input("Ton choix > ").strip()
+        if choix == '1':
+            continue
+        elif choix == '2':
+            remettrezero()
+            print("Stats remises a zero.")
+            # stay in post-game menu to let user decide next
+        else:
+            break
 
 
 def modeinverse():
-    print("Mode inverse : tu choisis un code, l'ordi essaye de deviner")
+    print("Mode inverse : duel humain vs ordi")
     couleurs = DEFAULTS['couleurs']
     taille = DEFAULTS['taille']
     maxessais = DEFAULTS['maxessais']
+    # no player name required; stats are global
+
+    # Phase 1: l'humain joue contre un code aleatoire
+    print("\nPhase 1 - Tu dois deviner un code aleatoire")
+    m_h = Mastermind(couleurs, taille, maxessais)
+    j = Joueur()
+    p = Partie(j, m_h)
+    score_humain = p.lancer()
+    print(f"Score humain: {score_humain}")
+
+    # Phase 2: l'humain choisit un code, l'ordi essaye de deviner
+    print("\nPhase 2 - Choisis un code pour que l'ordi l'essaie")
     code = input(f"Donne ton code secret de {taille} lettres: ").strip().upper()
     while len(code) != taille or any(c not in couleurs for c in code):
         print("Code invalide, recommence")
@@ -227,9 +268,19 @@ def modeinverse():
     o = Ordi()
     essais = o.deviner(couleurs, taille, maxessais, secret)
     if essais:
-        STATS.ajout(max(0, maxessais - essais), 'ordi')
+        score_ordi = max(0, maxessais - essais)
+        print(f"Score ordi: {score_ordi}")
+        STATS.ajout(score_ordi)
     else:
-        STATS.ajout(0, 'ordi')
+        score_ordi = 0
+        print("Score ordi: 0")
+        STATS.ajout(0)
+
+    # Score final combiné
+    final = int(score_humain) - int(score_ordi)
+    print(f"\nScore final (humain - ordi) = {score_humain} - {score_ordi} = {final}")
+    STATS.ajout(final)
+    show_stats()
 
 
 def remettrezero():
@@ -238,34 +289,96 @@ def remettrezero():
 
 
 def configurer():
-    print("Configurer les options du jeu :")
-    cur = DEFAULTS.copy()
-    print(f"Couleurs actuelles: {' '.join(cur['couleurs'])}")
-    nc = input("Nouvelle liste de lettres pour couleurs (ex: RGBYPN) ou entree pour garder: ").upper().strip()
-    if nc:
-        cur['couleurs'] = list(nc)
-    nt = input(f"Taille du code actuelle ({cur['taille']}) ou entree pour garder: ").strip()
-    if nt:
-        try:
-            cur['taille'] = int(nt)
-        except ValueError:
-            print("Taille invalide, on garde la valeur precedente.")
-    ne = input(f"Max essais actuelle ({cur['maxessais']}) ou entree pour garder: ").strip()
-    if ne:
-        try:
-            cur['maxessais'] = int(ne)
-        except ValueError:
-            print("Max essais invalide, on garde la valeur precedente.")
-    DEFAULTS.update(cur)
-    print("Nouvelles options en place.")
+    print("Config : laisse vide pour defaut (ex: RGBYPN)")
+    c = input(f"Couleurs (suite de lettres, def {''.join(DEFAULTS['couleurs'])}): ")
+    t = input(f"Taille code (def {DEFAULTS['taille']}): ")
+    m = input(f"Max essais (def {DEFAULTS['maxessais']}): ")
+    opts = {}
+    opts['couleurs'] = normaliser_couleurs(c) if c else DEFAULTS['couleurs']
+    try:
+        opts['taille'] = int(t) if t else DEFAULTS['taille']
+    except Exception:
+        print('Taille invalide, jg garde la valeur precedente.')
+        opts['taille'] = DEFAULTS['taille']
+    try:
+        opts['maxessais'] = int(m) if m else DEFAULTS['maxessais']
+    except Exception:
+        print('Max essais invalide, jg garde la valeur precedente.')
+        opts['maxessais'] = DEFAULTS['maxessais']
+    ok, msg = valider_opts(opts)
+    if not ok:
+        print('Config invalide :', msg)
+        print('Je garde les valeurs par defaut.')
+        return
+    DEFAULTS.update(opts)
+    print('Nouvelles options en place :', DEFAULTS)
 
 
 def main():
+    # show global stats at startup
+    show_stats()
     while True:
         affichermenu()
         choix = input("Ton choix > ").strip()
         if choix == '1':
             lancerjeu()
+        elif choix == '5':
+            modeinverse()
+        elif choix == '6':
+            try:
+                import pygame
+            except Exception:
+                print("pygame n'est pas disponible. Installez pygame pour utiliser la GUI.")
+                continue
+            # minimal GUI play
+            def play_gui():
+                pygame.init()
+                size = (600, 300)
+                screen = pygame.display.set_mode(size)
+                pygame.display.set_caption('Mastermind - GUI minimal')
+                font = pygame.font.SysFont(None, 24)
+                couleurs = DEFAULTS['couleurs']
+                taille = DEFAULTS['taille']
+                maxessais = DEFAULTS['maxessais']
+                mm = Mastermind(couleurs, taille, maxessais)
+                entry = ''
+                feedback = ''
+                attempts = 0
+                running = True
+                while running:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            running = False
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key == pygame.K_BACKSPACE:
+                                entry = entry[:-1]
+                            elif event.key == pygame.K_RETURN:
+                                if len(entry) == taille and all(c in couleurs for c in entry):
+                                    guess = list(entry.upper())
+                                    attempts += 1
+                                    bon, mal = mm.verifessai(guess)
+                                    feedback = f"Correct : {bon} | Partiel : {mal}"
+                                    if bon == taille or attempts >= maxessais:
+                                        score = max(0, maxessais - attempts) if bon == taille else 0
+                                        STATS.ajout(score)
+                                        print(f"(GUI) Score: {score}")
+                                        running = False
+                                    entry = ''
+                                else:
+                                    feedback = 'Entrée invalide'
+                            else:
+                                ch = event.unicode.upper()
+                                if ch.isalpha() and ch in couleurs and len(entry) < taille:
+                                    entry += ch
+                    screen.fill((20, 20, 20))
+                    screen.blit(font.render('Couleurs: ' + ' '.join(couleurs), True, (230,230,230)), (10,10))
+                    screen.blit(font.render('Saisie: ' + entry, True, (230,230,230)), (10,40))
+                    screen.blit(font.render('Feedback: ' + feedback, True, (230,230,230)), (10,70))
+                    screen.blit(font.render(f'Essais: {attempts}/{maxessais}', True, (230,230,230)), (10,100))
+                    pygame.display.flip()
+                    pygame.time.Clock().tick(30)
+                pygame.quit()
+            play_gui()
         elif choix == '4':
             configurer()
         elif choix == '2':
