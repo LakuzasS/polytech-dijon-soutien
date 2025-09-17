@@ -29,3 +29,25 @@ class Mastermind:
                 mauvais += 1
                 code[code.index(essai[i])] = None
         return bon, mauvais
+
+    def affres(self, bon, mauvais):
+        print(f"Correct : {bon} | Partiel : {mauvais}  (trop fort ou pas ?)")
+
+    def jouer(self):
+        print("Yo bienvenue sur le Mastermind :) Voici les couleurs dispo :")
+        print(" ".join(self.couleurs))
+        print(f"Faut trouver le code de {self.taille} couleurs, t'as {self.maxessais} essais. Vas-y, tente ta chance !")
+        while len(self.essais) < self.maxessais:
+            essai = input(f"Essai {len(self.essais)+1} : ").upper()
+            if len(essai) != self.taille or any(c not in self.couleurs for c in essai):
+                print("Rhoo, mets un code valide avec les bonnes couleurs !")
+                continue
+            essailist = list(essai)
+            self.ajoutessai(essailist)
+            bon, mauvais = self.verifessai(essailist)
+            self.affres(bon, mauvais)
+            if bon == self.taille:
+                print(f"GG, t'as cracké le code en {len(self.essais)} essais !")
+                return
+        print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.codesecret)}")
+
