@@ -1,64 +1,78 @@
 import random
 import os
 import json
-
 class Stats:
     def __init__(self, path=None):
-        # path can be None, a directory, or a file path; we store separate files in the directory
         if path is None:
-            self.dir = os.path.dirname(__file__)
+            self.dossier = os.path.dirname(__file__)
         elif os.path.isdir(path):
-            self.dir = path
+            self.dossier = path
         else:
-            self.dir = os.path.dirname(path) or '.'
-        self.f_nb = os.path.join(self.dir, '.mm_nb_parties')
-        self.f_score = os.path.join(self.dir, '.mm_score_total')
+            self.dossier = os.path.dirname(path) or '.'
+        self.fnb = f"{self.dossier}/.mm_nb_parties"
+        self.fsc = f"{self.dossier}/.mm_score_total"
 
-    def lire(self):
+    def nettoiepseudo(self, pseudo):
+        if not pseudo:
+            return None
+        s = ''.join(c for c in pseudo if c.isalnum() or c == '_')
+        return s or None
+
+    def chemins(self, pseudo):
+        sp = self.nettoiepseudo(pseudo)
+        if not sp:
+            return self.fnb, self.fsc
+        return f"{self.dossier}/.mm_{sp}_nb_parties", f"{self.dossier}/.mm_{sp}_score_total"
+
+    def lire(self, pseudo=None):
         nb = 0
         sc = 0
+        fnb, fsc = self.chemins(pseudo)
         try:
-            if os.path.exists(self.f_nb):
-                with open(self.f_nb, 'r') as f:
+            if os.path.exists(fnb):
+                with open(fnb, 'r') as f:
                     nb = int(f.read().strip() or 0)
         except Exception:
             nb = 0
         try:
-            if os.path.exists(self.f_score):
-                with open(self.f_score, 'r') as f:
+            if os.path.exists(fsc):
+                with open(fsc, 'r') as f:
                     sc = int(f.read().strip() or 0)
         except Exception:
             sc = 0
         return {'nb_parties': nb, 'score_total': sc}
 
-    def ajouter(self, score):
-        s = self.lire()
+    def ajout(self, score, pseudo=None):
+        s = self.lire(pseudo)
         nb = s.get('nb_parties', 0) + 1
         sc = s.get('score_total', 0) + int(score)
+        fnb, fsc = self.chemins(pseudo)
         try:
-            with open(self.f_nb, 'w') as f:
+            with open(fnb, 'w') as f:
                 f.write(str(nb))
         except Exception:
             pass
         try:
-            with open(self.f_score, 'w') as f:
+            with open(fsc, 'w') as f:
                 f.write(str(sc))
         except Exception:
             pass
         return {'nb_parties': nb, 'score_total': sc}
 
-    def reset(self):
+    def remet(self, pseudo=None):
+        fnb, fsc = self.chemins(pseudo)
         try:
-            with open(self.f_nb, 'w') as f:
+            with open(fnb, 'w') as f:
                 f.write('0')
         except Exception:
             pass
         try:
-            with open(self.f_score, 'w') as f:
+            with open(fsc, 'w') as f:
                 f.write('0')
         except Exception:
             pass
         return {'nb_parties': 0, 'score_total': 0}
+ 
 
 STATS = Stats()
 
@@ -121,7 +135,7 @@ class Partie:
         print("Let's go ! On démarre la partie !")
         print("Couleurs dispo : " + " ".join(self.mastermind.couleurs))
         print(f"Trouve le code de {self.mastermind.taille} couleurs, t'as {self.mastermind.maxessais} essais.")
-        stats = STATS.lire()
+        stats = STATS.lire(self.joueur.nom)
         nbp = stats.get('nb_parties', 0)
         tot = stats.get('score_total', 0)
         moy = (tot / nbp) if nbp else 0
@@ -135,12 +149,12 @@ class Partie:
                 essais = len(self.mastermind.essais)
                 score = max(0, self.mastermind.maxessais - essais)
                 print(f"GG {self.joueur.nom}, t'as cracké le code en {essais} essais ! Score: {score}")
-                nstats = STATS.ajouter(score)
+                nstats = STATS.ajout(score, self.joueur.nom)
                 print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
                 return
         print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.mastermind.codesecret)}")
         score = 0
-        nstats = STATS.ajouter(score)
+        nstats = STATS.ajout(score, self.joueur.nom)
         print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
 
 
@@ -165,7 +179,7 @@ def lancerjeu():
 
 
 def remettrezero():
-    STATS.reset()
+    STATS.remet()
     print("Ok, stats remises a zero. On repart a 0 !")
 
 

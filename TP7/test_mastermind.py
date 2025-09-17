@@ -34,21 +34,20 @@ class TestStats(unittest.TestCase):
         d = tempfile.mkdtemp(prefix='mm_stats_test_dir_', dir='.')
         try:
             s = Stats(path=d)
-            # reset to known state
-            s.reset()
+            s.remet()
             data = s.lire()
             self.assertEqual(data.get('nb_parties'), 0)
             self.assertEqual(data.get('score_total'), 0)
 
-            new = s.ajouter(5)
+            new = s.ajout(5)
             self.assertEqual(new.get('nb_parties'), 1)
             self.assertEqual(new.get('score_total'), 5)
 
-            new2 = s.ajouter(3)
+            new2 = s.ajout(3)
             self.assertEqual(new2.get('nb_parties'), 2)
             self.assertEqual(new2.get('score_total'), 8)
 
-            s.reset()
+            s.remet()
             data2 = s.lire()
             self.assertEqual(data2.get('nb_parties'), 0)
             self.assertEqual(data2.get('score_total'), 0)
