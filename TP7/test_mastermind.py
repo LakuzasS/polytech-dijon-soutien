@@ -31,10 +31,9 @@ class TestMastermind(unittest.TestCase):
 
 class TestStats(unittest.TestCase):
     def test_stats_add_and_reset(self):
-        fd, path = tempfile.mkstemp(prefix='mm_stats_test_', dir='.')
-        os.close(fd)
+        d = tempfile.mkdtemp(prefix='mm_stats_test_dir_', dir='.')
         try:
-            s = Stats(path=path)
+            s = Stats(path=d)
             # reset to known state
             s.reset()
             data = s.lire()
@@ -55,7 +54,9 @@ class TestStats(unittest.TestCase):
             self.assertEqual(data2.get('score_total'), 0)
         finally:
             try:
-                os.remove(path)
+                for f in os.listdir(d):
+                    os.remove(os.path.join(d, f))
+                os.rmdir(d)
             except Exception:
                 pass
 

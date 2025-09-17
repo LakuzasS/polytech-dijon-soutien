@@ -4,36 +4,61 @@ import json
 
 class Stats:
     def __init__(self, path=None):
-        self.path = path or os.path.join(os.path.dirname(__file__), '.mm_stats')
+        # path can be None, a directory, or a file path; we store separate files in the directory
+        if path is None:
+            self.dir = os.path.dirname(__file__)
+        elif os.path.isdir(path):
+            self.dir = path
+        else:
+            self.dir = os.path.dirname(path) or '.'
+        self.f_nb = os.path.join(self.dir, '.mm_nb_parties')
+        self.f_score = os.path.join(self.dir, '.mm_score_total')
 
     def lire(self):
-        if not os.path.exists(self.path):
-            return {'nb_parties': 0, 'score_total': 0}
+        nb = 0
+        sc = 0
         try:
-            with open(self.path, 'r') as f:
-                return json.load(f)
+            if os.path.exists(self.f_nb):
+                with open(self.f_nb, 'r') as f:
+                    nb = int(f.read().strip() or 0)
         except Exception:
-            return {'nb_parties': 0, 'score_total': 0}
+            nb = 0
+        try:
+            if os.path.exists(self.f_score):
+                with open(self.f_score, 'r') as f:
+                    sc = int(f.read().strip() or 0)
+        except Exception:
+            sc = 0
+        return {'nb_parties': nb, 'score_total': sc}
 
     def ajouter(self, score):
         s = self.lire()
-        s['nb_parties'] = s.get('nb_parties', 0) + 1
-        s['score_total'] = s.get('score_total', 0) + int(score)
+        nb = s.get('nb_parties', 0) + 1
+        sc = s.get('score_total', 0) + int(score)
         try:
-            with open(self.path, 'w') as f:
-                json.dump(s, f)
+            with open(self.f_nb, 'w') as f:
+                f.write(str(nb))
         except Exception:
             pass
-        return s
+        try:
+            with open(self.f_score, 'w') as f:
+                f.write(str(sc))
+        except Exception:
+            pass
+        return {'nb_parties': nb, 'score_total': sc}
 
     def reset(self):
-        s = {'nb_parties': 0, 'score_total': 0}
         try:
-            with open(self.path, 'w') as f:
-                json.dump(s, f)
+            with open(self.f_nb, 'w') as f:
+                f.write('0')
         except Exception:
             pass
-        return s
+        try:
+            with open(self.f_score, 'w') as f:
+                f.write('0')
+        except Exception:
+            pass
+        return {'nb_parties': 0, 'score_total': 0}
 
 STATS = Stats()
 
