@@ -1,4 +1,41 @@
 import random
+import os
+import json
+
+class Stats:
+    def __init__(self, path=None):
+        self.path = path or os.path.join(os.path.dirname(__file__), '.mm_stats')
+
+    def lire(self):
+        if not os.path.exists(self.path):
+            return {'nb_parties': 0, 'score_total': 0}
+        try:
+            with open(self.path, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return {'nb_parties': 0, 'score_total': 0}
+
+    def ajouter(self, score):
+        s = self.lire()
+        s['nb_parties'] = s.get('nb_parties', 0) + 1
+        s['score_total'] = s.get('score_total', 0) + int(score)
+        try:
+            with open(self.path, 'w') as f:
+                json.dump(s, f)
+        except Exception:
+            pass
+        return s
+
+    def reset(self):
+        s = {'nb_parties': 0, 'score_total': 0}
+        try:
+            with open(self.path, 'w') as f:
+                json.dump(s, f)
+        except Exception:
+            pass
+        return s
+
+STATS = Stats()
 
 class Mastermind:
     def __init__(self, couleurs, taille, maxessais):
@@ -53,12 +90,24 @@ class Partie:
         print("Let's go ! On démarre la partie !")
         print("Couleurs dispo : " + " ".join(self.mastermind.couleurs))
         print(f"Trouve le code de {self.mastermind.taille} couleurs, t'as {self.mastermind.maxessais} essais.")
+        stats = STATS.lire()
+        nbp = stats.get('nb_parties', 0)
+        tot = stats.get('score_total', 0)
+        moy = (tot / nbp) if nbp else 0
+        print(f"Stats -> parties: {nbp} | score total: {tot} | moyenne: {moy:.2f}")
         while len(self.mastermind.essais) < self.mastermind.maxessais:
             essai = self.joueur.proposercode(self.mastermind.taille, self.mastermind.couleurs)
             self.mastermind.ajoutessai(essai)
             bon, mauvais = self.mastermind.verifessai(essai)
             self.mastermind.affres(bon, mauvais)
             if bon == self.mastermind.taille:
-                print(f"GG {self.joueur.nom}, t'as cracké le code en {len(self.mastermind.essais)} essais !")
+                essais = len(self.mastermind.essais)
+                score = max(0, self.mastermind.maxessais - essais)
+                print(f"GG {self.joueur.nom}, t'as cracké le code en {essais} essais ! Score: {score}")
+                nstats = STATS.ajouter(score)
+                print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
                 return
         print(f"Aïe, t'as perdu... Le code c'était : {''.join(self.mastermind.codesecret)}")
+        score = 0
+        nstats = STATS.ajouter(score)
+        print(f"Nouvelles stats -> parties: {nstats['nb_parties']} | score total: {nstats['score_total']}")
