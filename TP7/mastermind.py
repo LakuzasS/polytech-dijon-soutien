@@ -40,7 +40,6 @@ class Stats:
         self._write_int(self.fsc, 0)
         return {'nb_parties': 0, 'score_total': 0}
  
-
 STATS = Stats()
 
 DEFAULTS = {
@@ -48,7 +47,6 @@ DEFAULTS = {
     'taille': 4,
     'maxessais': 12,
 }
-
 
 def normaliser_couleurs(entree):
     if isinstance(entree, list):
@@ -63,9 +61,6 @@ def normaliser_couleurs(entree):
             seen.add(c)
             res.append(c)
     return res
-
-
-
 
 class Mastermind:
     def __init__(self, couleurs, taille, maxessais):
@@ -86,7 +81,6 @@ class Mastermind:
 
     def affres(self, bon, mauvais):
         print(f"Correct : {bon} | Partiel : {mauvais}")
-
 
 def calcrep(secret, essai):
     bon = 0
@@ -143,7 +137,6 @@ class Partie:
         score = 0
         return score
 
-
 def affichermenu():
     print("\n=== Mastermind ===")
     print("1) Jouer (terminal)")
@@ -151,14 +144,12 @@ def affichermenu():
     print("3) Quitter")
     print("4) Configurer les options du jeu")
 
-
 def show_stats():
     s = STATS.lire()
     nbp = s.get('nb_parties', 0)
     tot = s.get('score_total', 0)
     moy = (tot / nbp) if nbp else 0
     print(f"Stats (Global) -> parties: {nbp} | score total: {tot} | moyenne: {moy:.2f}")
-
 
 def lancerjeu():
     print("Lancer une partie !")
@@ -186,11 +177,9 @@ def lancerjeu():
         else:
             break
 
-
 def remettrezero():
     STATS.remet()
     print("Ok, stats remises a zero. On repart a 0 !")
-
 
 def configurer():
     print("Config : laisse vide pour defaut (ex: RGBYPN)")
