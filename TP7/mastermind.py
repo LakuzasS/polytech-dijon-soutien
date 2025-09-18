@@ -1,6 +1,5 @@
 import random
 import os
-import itertools
 class Stats:
     def __init__(self, path=None):
         self.dossier = os.path.dirname(__file__)
