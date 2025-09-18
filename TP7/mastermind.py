@@ -123,22 +123,6 @@ def calcrep(secret, essai):
             code[code.index(tst[i])] = None
     return bon, mal
 
-class Ordi:
-    def deviner(self, couleurs, taille, maxessais, secret):
-        poss = [list(p) for p in itertools.product(couleurs, repeat=taille)]
-        essais = 0
-        while essais < maxessais and poss:
-            ess = list(random.choice(poss))
-            essais += 1
-            print(f"Ordi essai {essais} : {''.join(ess)}")
-            bon, mal = calcrep(secret, ess)
-            if bon == taille:
-                print(f"GG l'ordi a trouve en {essais} essais")
-                return essais
-            poss = [p for p in poss if calcrep(p, ess) == (bon, mal)]
-        print("L'ordi n'a pas reussi a trouver le code")
-        return None
-
 class Joueur:
     def __init__(self, nom=None):
         self.nom = nom
@@ -185,8 +169,7 @@ def affichermenu():
     print("2) Remettre a zero les stats")
     print("3) Quitter")
     print("4) Configurer les options du jeu")
-    print("5) Mode inverse (l'ordi devine)")
-    print("6) Jouer (GUI)")
+    print("5) Jouer (GUI)")
 
 
 def show_stats(_pseudo=None):
@@ -222,43 +205,6 @@ def lancerjeu():
             print("Stats remises a zero.")
         else:
             break
-
-
-def modeinverse():
-    print("Mode inverse : duel humain vs ordi")
-    couleurs = DEFAULTS['couleurs']
-    taille = DEFAULTS['taille']
-    maxessais = DEFAULTS['maxessais']
-
-    print("\nPhase 1 - Tu dois deviner un code aleatoire")
-    m_h = Mastermind(couleurs, taille, maxessais)
-    j = Joueur()
-    p = Partie(j, m_h)
-    score_humain = p.lancer()
-    print(f"Score humain: {score_humain}")
-
-    print("\nPhase 2 - Choisis un code pour que l'ordi l'essaie")
-    code = input(f"Donne ton code secret de {taille} lettres: ").strip().upper()
-    while len(code) != taille or any(c not in couleurs for c in code):
-        print("Code invalide, recommence")
-        code = input(f"Donne ton code secret de {taille} lettres: ").strip().upper()
-    secret = list(code)
-    o = Ordi()
-    essais = o.deviner(couleurs, taille, maxessais, secret)
-    if essais:
-        score_ordi = max(0, maxessais - essais)
-        print(f"Score ordi: {score_ordi}")
-        STATS.ajout(score_ordi)
-    else:
-        score_ordi = 0
-        print("Score ordi: 0")
-        STATS.ajout(0)
-
-    # Score final combiné
-    final = int(score_humain) - int(score_ordi)
-    print(f"\nScore final (humain - ordi) = {score_humain} - {score_ordi} = {final}")
-    STATS.ajout(final)
-    show_stats()
 
 
 def remettrezero():
@@ -354,8 +300,6 @@ def main():
         if choix == '1':
             lancerjeu()
         elif choix == '5':
-            modeinverse()
-        elif choix == '6':
             play_gui()
         elif choix == '4':
             configurer()
