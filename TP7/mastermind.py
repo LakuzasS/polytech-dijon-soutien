@@ -65,25 +65,7 @@ def normaliser_couleurs(entree):
     return res
 
 
-def valider_opts(opts):
-    cols = normaliser_couleurs(opts.get('couleurs', []))
-    if not cols:
-        return False, 'Liste de couleurs invalide'
-    taille = opts.get('taille', 4)
-    try:
-        taille = int(taille)
-    except Exception:
-        return False, 'Taille invalide'
-    if taille < 1:
-        return False, 'Taille doit etre >=1'
-    maxe = opts.get('maxessais', 12)
-    try:
-        maxe = int(maxe)
-    except Exception:
-        return False, 'Max essais invalide'
-    if maxe < 1:
-        return False, 'Max essais doit etre >=1'
-    return True, ''
+
 
 class Mastermind:
     def __init__(self, couleurs, taille, maxessais):
@@ -168,7 +150,6 @@ def affichermenu():
     print("2) Remettre a zero les stats")
     print("3) Quitter")
     print("4) Configurer les options du jeu")
-    print("5) Jouer (GUI)")
 
 
 def show_stats():
@@ -228,67 +209,12 @@ def configurer():
     except Exception:
         print('Max essais invalide, jg garde la valeur precedente.')
         opts['maxessais'] = DEFAULTS['maxessais']
-    ok, msg = valider_opts(opts)
-    if not ok:
-        print('Config invalide :', msg)
+    if not opts['couleurs'] or opts['taille'] < 1 or opts['maxessais'] < 1:
+        print('Config invalide : valeurs incorrectes')
         print('Je garde les valeurs par defaut.')
         return
     DEFAULTS.update(opts)
     print('Nouvelles options en place :', DEFAULTS)
-
-
-def play_gui():
-    try:
-        import pygame
-    except Exception:
-        print("pygame n'est pas disponible. Installez pygame pour utiliser la GUI.")
-        return
-    pygame.init()
-    size = (600, 300)
-    screen = pygame.display.set_mode(size)
-    pygame.display.set_caption('Mastermind - GUI minimal')
-    font = pygame.font.SysFont(None, 24)
-    couleurs = DEFAULTS['couleurs']
-    taille = DEFAULTS['taille']
-    maxessais = DEFAULTS['maxessais']
-    mm = Mastermind(couleurs, taille, maxessais)
-    entry = ''
-    feedback = ''
-    attempts = 0
-    running = True
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_BACKSPACE:
-                    entry = entry[:-1]
-                elif event.key == pygame.K_RETURN:
-                    if len(entry) == taille and all(c in couleurs for c in entry):
-                        guess = list(entry.upper())
-                        attempts += 1
-                        bon, mal = mm.verifessai(guess)
-                        feedback = f"Correct : {bon} | Partiel : {mal}"
-                        if bon == taille or attempts >= maxessais:
-                            score = max(0, maxessais - attempts) if bon == taille else 0
-                            STATS.ajout(score)
-                            print(f"(GUI) Score: {score}")
-                            running = False
-                        entry = ''
-                    else:
-                        feedback = 'Entrée invalide'
-                else:
-                    ch = event.unicode.upper()
-                    if ch.isalpha() and ch in couleurs and len(entry) < taille:
-                        entry += ch
-        screen.fill((20, 20, 20))
-        screen.blit(font.render('Couleurs: ' + ' '.join(couleurs), True, (230,230,230)), (10,10))
-        screen.blit(font.render('Saisie: ' + entry, True, (230,230,230)), (10,40))
-        screen.blit(font.render('Feedback: ' + feedback, True, (230,230,230)), (10,70))
-        screen.blit(font.render(f'Essais: {attempts}/{maxessais}', True, (230,230,230)), (10,100))
-        pygame.display.flip()
-        pygame.time.Clock().tick(30)
-    pygame.quit()
 
 
 def main():
@@ -298,8 +224,6 @@ def main():
         choix = input("Ton choix > ").strip()
         if choix == '1':
             lancerjeu()
-        elif choix == '5':
-            play_gui()
         elif choix == '4':
             configurer()
         elif choix == '2':
