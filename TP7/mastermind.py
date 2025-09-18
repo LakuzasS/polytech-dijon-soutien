@@ -171,7 +171,7 @@ def affichermenu():
     print("5) Jouer (GUI)")
 
 
-def show_stats(_pseudo=None):
+def show_stats():
     s = STATS.lire()
     nbp = s.get('nb_parties', 0)
     tot = s.get('score_total', 0)
